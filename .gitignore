@@ -6,5 +6,6 @@ demo/*.jsonl
 .DS_Store
 coverage/
 
-# Committed separately — see README (Development).
+# Not committed: CI installs against the published ranges, so an upstream
+# break shows up here rather than in someone else's first `npm install`.
 package-lock.json
