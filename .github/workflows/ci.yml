@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ['20', '22']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+      - run: npm install
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  # Proves the README's demo still behaves the way the README says it does.
+  demo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm install
+      - run: npm run seed
+      - name: the server answers, masks, and refuses
+        run: |
+          npx tsx src/index.ts http --config querygate.config.json &
+          for _ in $(seq 1 30); do
+            curl -sf http://127.0.0.1:8765/health >/dev/null && break
+            sleep 1
+          done
+
+          HDR=$(mktemp)
+          curl -sS -D "$HDR" -X POST http://127.0.0.1:8765/mcp \
+            -H 'Content-Type: application/json' \
+            -H 'Accept: application/json, text/event-stream' \
+            -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci","version":"1"}}}' \
+            >/dev/null
+          SID=$(grep -i 'mcp-session-id' "$HDR" | tr -d '\r' | cut -d' ' -f2)
+          test -n "$SID" || { echo "::error::no session id returned"; exit 1; }
+
+          ask() {
+            curl -sS -X POST http://127.0.0.1:8765/mcp \
+              -H 'Content-Type: application/json' \
+              -H 'Accept: application/json, text/event-stream' \
+              -H "mcp-session-id: $SID" -d "$1" | sed 's/^data: //'
+          }
+
+          ask '{"jsonrpc":"2.0","method":"notifications/initialized"}' >/dev/null
+
+          ask '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"run_query","arguments":{"sql":"SELECT email FROM customers LIMIT 1"}}}' \
+            | grep -q 'redacted' || { echo "::error::email was not masked"; exit 1; }
+
+          ask '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"run_query","arguments":{"sql":"DROP TABLE customers"}}}' \
+            | grep -q 'refused' || { echo "::error::a write was not refused"; exit 1; }
+
+          ask '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"list_tables","arguments":{}}}' \
+            | grep -q 'employee_salaries' && { echo "::error::a denied table was listed"; exit 1; }
+
+          echo "masking, refusal and table hiding all behaved"
