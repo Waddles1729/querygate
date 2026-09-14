@@ -1,0 +1,10 @@
+node_modules/
+dist/
+demo/*.db
+demo/*.jsonl
+*.log
+.DS_Store
+coverage/
+
+# Committed separately — see README (Development).
+package-lock.json

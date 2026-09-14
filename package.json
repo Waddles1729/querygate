@@ -1,0 +1,40 @@
+{
+  "name": "querygate",
+  "version": "0.1.0",
+  "description": "A read-only SQL MCP server with guard rails: schema introspection, row and time caps, column masking, and an audit trail.",
+  "keywords": ["mcp", "model-context-protocol", "sql", "postgres", "sqlite", "llm", "agent", "read-only"],
+  "license": "MIT",
+  "author": "Masanari Makino <masanari773@gmail.com>",
+  "homepage": "https://github.com/Waddles1729/querygate",
+  "repository": { "type": "git", "url": "git+https://github.com/Waddles1729/querygate.git" },
+  "type": "module",
+  "bin": { "querygate": "./dist/index.js" },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist", "README.md", "LICENSE"],
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "seed": "tsx src/demo/seed.ts demo/shop.db",
+    "demo": "npm run seed && tsx src/index.ts stdio --config querygate.config.json",
+    "demo:http": "npm run seed && tsx src/index.ts http --config querygate.config.json",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "better-sqlite3": "^12.0.0",
+    "fastify": "^5.0.0",
+    "zod": "^4.0.0"
+  },
+  "peerDependencies": { "pg": "^8.11.0" },
+  "peerDependenciesMeta": { "pg": { "optional": true } },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.0",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}

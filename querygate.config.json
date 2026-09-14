@@ -1,0 +1,16 @@
+{
+  "database": { "kind": "sqlite", "file": "demo/shop.db" },
+  "maxRows": 200,
+  "timeoutMs": 5000,
+  "auditLog": "demo/audit.jsonl",
+  "http": { "port": 8765, "host": "127.0.0.1" },
+  "policy": {
+    "denyTables": ["employee_salaries"],
+    "hashSalt": "change-me-in-production",
+    "mask": [
+      { "table": "customers", "column": "email", "strategy": "domain" },
+      { "table": "customers", "column": "phone", "strategy": "partial" },
+      { "table": "*", "column": "password_hash", "strategy": "redact" }
+    ]
+  }
+}
